@@ -9,51 +9,89 @@
 import UIKit
 
 class ViewController: UIViewController {
-
   
+  @IBOutlet weak var btn: UIButton!
   
-  @IBOutlet weak var fsd: UIButton!
+  var pings = 0
+  let boxIndex = 2
+  let otherBoxIndex = 7
+  var drawingInBox = false
+  var addedChildren: [UIView] = []
+  weak var box: UIView!
   
   override func loadView() {
     super.loadView()
-//    let label = UILabel(frame: CGRect(x: 20, y: 20, width: 80, height: 30))
     let label = UILabel()
     label.text = "Heyo"
     guard let view = self.view else { return }
     view.addChild(label)
-    label.centerXAnchor.constraintEqualToAnchor(view.centerXAnchor).active = true
-    label.topAnchor.constraintEqualToAnchor(view.topAnchor, constant: 20.0).active = true
+      .withCenterXEqualToAnchor(view.centerXAnchor)
+      .withTopEqualToAnchor(view.topAnchor, constant: 20.0)
     
-    let btn = view.addChild(UIButton())
+    self.btn = view.addChild(UIButton())
       .withCenterXEqualToAnchor(view.centerXAnchor)
       .belowView(label)
     btn.setTitleColor(UIColor.blueColor(), forState: .Normal)
     btn.setTitle("Button", forState: .Normal)
+    btn.addTarget(self, action: "buttonTouch:", forControlEvents: .TouchUpInside)
     
-//    let button = UIButton(frame: CGRect(x: 0, y: 0, width: 30, height: 30))
-//    button.setTitleColor(UIColor.blueColor(), forState: .Normal)
-//    button.setTitle("Button", forState: .Normal)
-//    view.addChild(button)
-//    button.topAnchor.constraintEqualToAnchor(label.bottomAnchor).active = true
-//    button.centerXAnchor.constraintEqualToAnchor(view.centerXAnchor).active = true
+    let gestureRecognizer = UISwipeGestureRecognizer(target: self, action: "userDidSwipe:")
+    gestureRecognizer.direction = .Up
+    view.addGestureRecognizer(gestureRecognizer)
+  }
+  
+  @IBAction func userDidSwipe(sender: AnyObject) {
+    popChildView()
   }
   
   @IBAction func buttonTouch(sender: AnyObject) {
-    guard let view = self.view else { return }
-    let label =
+    guard let view = box ?? self.view,
+      let topNeighbor = addedChildren.last ?? self.btn else { return }
+    let textColor = drawingInBox ? UIColor.whiteColor() : UIColor.blackColor()
+    switch pings {
+    case boxIndex:
+      box = view.addChild(UIView())
+        .withWidthEqualToView(view)
+        .belowView(topNeighbor)
+        .withBottomEqualToAnchor(view.bottomAnchor)
+      box.backgroundColor = UIColor.purpleColor()
+      box.tag = pings
+      drawingInBox = true
+    case otherBoxIndex:
+      for constraint in box.constraints {
+        if constraint.firstAttribute == .Bottom {
+          box.removeConstraint(constraint)
+          view.activateConstraint(box.bottomAnchor.constraintEqualToAnchor(topNeighbor.bottomAnchor))
+        }
+      }
+      drawingInBox = false
+    default:
+      let label = view.addChild(UILabel())
+        .withCenterXEqualToAnchor(view.centerXAnchor)
+        .belowView(topNeighbor)
+      label.text = "Ping! \(pings)"
+      label.textColor = textColor
+      label.tag = pings
+      addedChildren.append(label)
+    }
+    pings += 1
   }
-    
-  override func viewDidLoad() {
-    super.viewDidLoad()
-    // Do any additional setup after loading the view, typically from a nib.
+  
+  func popChildView() {
+    if addedChildren.count == boxIndex + 1 && box != nil {
+      box.removeFromSuperview()
+      drawingInBox = false
+    }
+    else if let child = addedChildren.popLast() {
+      child.removeFromSuperview()
+    }
   }
-
-  override func didReceiveMemoryWarning() {
-    super.didReceiveMemoryWarning()
-    // Dispose of any resources that can be recreated.
+  
+  func clearChildren() {
+    for child in addedChildren {
+      child.removeFromSuperview()
+    }
   }
-
-
 }
 
 
